@@ -37,6 +37,7 @@ module.exports = {
   'x': require('./library/x'),
   'y': require('./library/y'),
   'z': require('./library/z'),
+  '/': require('./library/_launchpad'),
   '*': require('./library/_bang'),
   '#': require('./library/_comment'),
   ':': require('./library/_midi'),

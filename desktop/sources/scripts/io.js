@@ -1,5 +1,6 @@
 'use strict'
 
+const MidiLaunchpad = require('./io.midi-launchpad')
 const Midi = require('./io.midi')
 const Udp = require('./io.udp')
 const Osc = require('./io.osc')
@@ -8,11 +9,13 @@ function IO (terminal) {
   this.midi = new Midi(terminal)
   this.udp = new Udp(terminal)
   this.osc = new Osc(terminal)
+  this.midilaunchpad = new MidiLaunchpad(terminal)
 
   this.start = function () {
     this.midi.start()
     this.udp.start()
     this.osc.start()
+    this.midilaunchpad.start()
     this.clear()
   }
 
@@ -20,12 +23,14 @@ function IO (terminal) {
     this.midi.clear()
     this.udp.clear()
     this.osc.clear()
+    this.midilaunchpad.clear()
   }
 
   this.run = function () {
     this.midi.run()
     this.udp.run()
     this.osc.run()
+    this.midilaunchpad.run()
   }
 
   this.length = function () {
