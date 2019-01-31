@@ -18,7 +18,11 @@ app.on('ready', () => {
     icon: __dirname + '/icon.ico',
     transparent: process.platform !== 'win32',
     skipTaskbar: process.platform !== 'win32',
-    autoHideMenuBar: process.platform !== 'win32'
+    autoHideMenuBar: process.platform !== 'win32',
+    webPreferences: {
+      // needed for OffscreenCanvas
+      experimentalFeatures: true
+    }
   })
 
   app.win.loadURL(`file://${__dirname}/sources/index.html`)

@@ -7,6 +7,7 @@ function Terminal (tile = { w: 20, h: 30 }) {
   const History = require('./history')
   const Keyboard = require('./keyboard')
   const IO = require('./io')
+  const Renderer = require('./renderer')
 
   this.library = require('../../core/library')
 
@@ -20,7 +21,9 @@ function Terminal (tile = { w: 20, h: 30 }) {
   // Themes
   this.theme = new Theme({ background: '#000000', f_high: '#ffffff', f_med: '#777777', f_low: '#444444', f_inv: '#000000', b_high: '#eeeeee', b_med: '#72dec2', b_low: '#444444', b_inv: '#ffb545' })
 
-  this.el = document.createElement('canvas')
+  this.renderer = new Renderer(tile.w, tile.h, this.theme.active)
+
+  this.el = document.createElement('canvas', {alpha: false})
   this.context = this.el.getContext('2d')
   this.size = { width: 0, height: 0, ratio: 0.5, grid: { w: 8, h: 8 } }
   this.isPaused = false
@@ -228,50 +231,8 @@ function Terminal (tile = { w: 20, h: 30 }) {
 
   this.drawSprite = function (x, y, g, styles = { isCursor: false, isSelection: false, isPort: false, f: null, b: null }) {
     const ctx = this.context
-
-    ctx.textBaseline = 'bottom'
-    ctx.textAlign = 'center'
-    ctx.font = `${tile.h * 0.75}px input_mono_medium`
-
-    // Highlight Variables
-    if (g === 'V' && this.cursor.read() === 'V') {
-      ctx.fillStyle = this.theme.active.b_inv
-      ctx.fillRect(x * tile.w, (y) * tile.h, tile.w, tile.h)
-      ctx.fillStyle = this.theme.active.background
-    } else if (styles.f && styles.b && this.theme.active[styles.f] && this.theme.active[styles.b]) {
-      ctx.fillStyle = this.theme.active[styles.b]
-      ctx.fillRect(x * tile.w, (y) * tile.h, tile.w, tile.h)
-      ctx.fillStyle = this.theme.active[styles.f]
-    } else if (styles.isSelection) {
-      ctx.fillStyle = this.theme.active.b_inv
-      ctx.fillRect(x * tile.w, (y) * tile.h, tile.w, tile.h)
-      ctx.fillStyle = this.theme.active.f_inv
-    } else if (styles.isPort) {
-      if (styles.isPort === 'output') { // Output
-        ctx.fillStyle = this.theme.active.b_high
-        ctx.fillRect(x * tile.w, (y) * tile.h, tile.w, tile.h)
-        ctx.fillStyle = this.theme.active.f_low
-      } else if (styles.isPort === 'input') { // Input
-        ctx.fillStyle = this.theme.active.b_high
-      } else if (styles.isPort === 'passive') { // Passive
-        ctx.fillStyle = this.theme.active.b_med
-        ctx.fillRect(x * tile.w, (y) * tile.h, tile.w, tile.h)
-        ctx.fillStyle = this.theme.active.f_low
-      } else if (styles.isPort === 'haste') { // Haste
-        ctx.fillStyle = this.theme.active.background
-        ctx.fillRect(x * tile.w, (y) * tile.h, tile.w, tile.h)
-        ctx.fillStyle = this.theme.active.b_med
-      } else {
-        ctx.fillStyle = this.theme.active.background
-        ctx.fillRect(x * tile.w, (y) * tile.h, tile.w, tile.h)
-        ctx.fillStyle = this.theme.active.f_high
-      }
-    } else if (styles.isLocked) {
-      ctx.fillStyle = this.theme.active.f_med
-    } else {
-      ctx.fillStyle = this.theme.active.f_low
-    }
-    ctx.fillText(styles.isCursor && (g === '.' || g === '+') ? (!this.isPaused ? '@' : '~') : g, (x + 0.5) * tile.w, (y + 1) * tile.h)
+    g = styles.isCursor && (g === '.' || g === '+') ? (!this.isPaused ? '@' : '~') : g
+    this.renderer.drawSprite(ctx, x, y, g, styles)
   }
 
   this.write = function (text, offsetX, offsetY, limit) {
@@ -294,7 +255,6 @@ function Terminal (tile = { w: 20, h: 30 }) {
     this.el.height = this.size.height + tile.h
     this.el.style.width = (this.size.width * this.size.ratio) + 'px'
     this.el.style.height = (this.size.height * this.size.ratio) + 'px'
-
     this.align()
 
     if (resizeWindow === true) {
