@@ -32,6 +32,7 @@ function Terminal (tile = { w: 20, h: 30 }) {
   this.bpm = 120
   this.previousState = null
   this.previousCursor = null
+  this.previousPorts = {}
 
   this.install = function (host) {
     host.appendChild(this.el)
@@ -218,6 +219,7 @@ function Terminal (tile = { w: 20, h: 30 }) {
     for (let y = 0; y < this.orca.h; y++) {
       for (let x = 0; x < this.orca.w; x++) {
         const port = this.ports[`${x}:${y}`]
+        const previousPort = this.previousPorts[`${x}:${y}`]
         const glyph = this.orca.s[y * this.orca.w + x];
         const previousGlyph = this.previousState ? this.previousState[y * this.orca.w + x] : null;
         const resultGlyph = this.guide(x, y);
@@ -233,16 +235,18 @@ function Terminal (tile = { w: 20, h: 30 }) {
           draw = true;
         }
 
+        if (!!port !== !!previousPort || (port && port.type !== previousPort.type)) {
+          draw = true;
+        }
+
         if (isPreviousSelection !== isSelection || isCursor !== isPreviousCursor) {
           draw = true;
         }
 
         if (!this.showInterface && resultGlyph === '.') {
           if (!isCursor) {
-            if (isPreviousCursor) {
-              clear = true;
-            }
-            draw = false;    
+            if (isPreviousCursor) clear = true;
+            draw = false;
           }
           
         }
@@ -259,6 +263,7 @@ function Terminal (tile = { w: 20, h: 30 }) {
     }
     this.previousCursor = { x: this.cursor.x, y: this.cursor.y, w: this.cursor.w, h: this.cursor.h };
     this.previousState = this.orca.s;
+    this.previousPorts = this.ports;
   }
 
   this.drawInterface = function () {
