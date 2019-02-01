@@ -147,6 +147,9 @@ function Terminal (tile = { w: 20, h: 30 }) {
 
   this.toggleInterface = function () {
     this.showInterface = this.showInterface !== true
+    this.clear()
+    this.drawInterface()
+    this.drawProgram()
   }
 
   this.toggleBackground = function () {
@@ -161,6 +164,11 @@ function Terminal (tile = { w: 20, h: 30 }) {
 
   this.isSelection = function (x, y) {
     return !!(x >= this.cursor.x && x < this.cursor.x + this.cursor.w && y >= this.cursor.y && y < this.cursor.y + this.cursor.h)
+  }
+
+  this.isInside = function(x, y, box) {
+    if (!box) return false;
+    return x >= box.x && x < box.x + box.w && y >= box.y && y < box.y + box.h;
   }
 
   this.portAt = function (x, y, req = null) {
@@ -210,21 +218,46 @@ function Terminal (tile = { w: 20, h: 30 }) {
     for (let y = 0; y < this.orca.h; y++) {
       for (let x = 0; x < this.orca.w; x++) {
         const port = this.ports[`${x}:${y}`]
-        const glyph = this.guide(x, y)
+        const glyph = this.orca.s[y * this.orca.w + x];
+        const previousGlyph = this.previousState ? this.previousState[y * this.orca.w + x] : null;
+        const resultGlyph = this.guide(x, y);
         const isCursor = this.isCursor(x, y)
-        if (this.previousState && !isCursor) {
-          const ispreviousCursor = this.previousCursor && x === this.previousCursor.x && y === this.previousCursor.y;
-          if (!ispreviousCursor) {
-            const previousGlyph = this.previousState[y * this.orca.w + x];
-            if (previousGlyph === this.orca.glyphAt(x, y)) continue
-          }
+        const isPreviousCursor = this.previousCursor && x === this.previousCursor.x && y === this.previousCursor.y;
+        const isSelection = this.isSelection(x, y);
+        const isPreviousSelection = this.isInside(x, y, this.previousCursor);
+        
+        let clear = false;
+        let draw = false;
+
+        if (previousGlyph !== glyph) {
+          draw = true;
         }
-        if (this.showInterface === false && glyph === '.' && !isCursor) { continue }
-        const styles = { isSelection: this.isSelection(x, y), isCursor: isCursor, isPort: port ? port.type : false, isLocked: this.orca.lockAt(x, y) }
-        this.drawSprite(x, y, glyph, styles)
+
+        if (isPreviousSelection !== isSelection || isCursor !== isPreviousCursor) {
+          draw = true;
+        }
+
+        if (!this.showInterface && resultGlyph === '.') {
+          if (!isCursor) {
+            if (isPreviousCursor) {
+              clear = true;
+            }
+            draw = false;    
+          }
+          
+        }
+
+        if (clear) {
+          this.context.clearRect(x * tile.w, y * tile.h, tile.w, tile.h);
+        }
+
+        if (draw) {
+          const styles = { isSelection: isSelection, isCursor: isCursor, isPort: port ? port.type : false, isLocked: this.orca.lockAt(x, y) }
+          this.drawSprite(x, y, resultGlyph, styles)
+        }
       }
     }
-    this.previousCursor = { x: this.cursor.x, y: this.cursor.y };
+    this.previousCursor = { x: this.cursor.x, y: this.cursor.y, w: this.cursor.w, h: this.cursor.h };
     this.previousState = this.orca.s;
   }
 
