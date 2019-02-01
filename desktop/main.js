@@ -8,17 +8,24 @@ let isShown = true
 app.win = null
 
 app.on('ready', () => {
+
+  const icon = {
+    darwin: 'icon.icns',
+    linux: 'icon.png',
+    win32: 'icon.ico'
+  }[process.platform] || 'icon.ico'
+
   app.win = new BrowserWindow({
     width: 710,
     height: 450,
     minWidth: 320,
     minHeight: 320,
-    frame: process.platform === 'win32',
+    frame: process.platform !== 'darwin',
     resizable: true,
-    icon: __dirname + '/icon.ico',
-    transparent: process.platform !== 'win32',
-    skipTaskbar: process.platform !== 'win32',
-    autoHideMenuBar: process.platform !== 'win32',
+    icon: __dirname + '/' + icon,
+    transparent: process.platform === 'darwin',
+    skipTaskbar: process.platform === 'darwin',
+    autoHideMenuBar: process.platform === 'darwin',
     webPreferences: {
       // needed for OffscreenCanvas
       experimentalFeatures: true
