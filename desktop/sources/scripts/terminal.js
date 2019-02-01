@@ -21,8 +21,6 @@ function Terminal (tile = { w: 20, h: 30 }) {
   // Themes
   this.theme = new Theme({ background: '#000000', f_high: '#ffffff', f_med: '#777777', f_low: '#444444', f_inv: '#000000', b_high: '#eeeeee', b_med: '#72dec2', b_low: '#444444', b_inv: '#ffb545' })
 
-  this.renderer = new Renderer(tile.w, tile.h, this.theme.active)
-
   this.el = document.createElement('canvas', {alpha: false})
   this.context = this.el.getContext('2d')
   this.size = { width: 0, height: 0, ratio: 0.5, grid: { w: 8, h: 8 } }
@@ -37,6 +35,7 @@ function Terminal (tile = { w: 20, h: 30 }) {
   }
 
   this.start = function () {
+    this.renderer = new Renderer(tile.w, tile.h, this.theme.active)
     this.theme.start()
     this.io.start()
     this.source.new()

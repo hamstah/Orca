@@ -95,10 +95,6 @@ class Renderer {
 
 
   _drawSprite(ctx, w, h, x, y, g, theme, styles = { isCursor: false, isSelection: false, isPort: false, f: null, b: null, isCursorVariable: false }) {
-    ctx.textBaseline = 'bottom'
-    ctx.textAlign = 'center'
-    ctx.font = `${h * 0.75}px input_mono_medium`
-
     // Highlight Variables
     if (styles.isCursorVariable) {
       ctx.fillStyle = theme.b_inv
@@ -133,7 +129,10 @@ class Renderer {
     } else {
       ctx.fillStyle = theme.f_low
     }
-
+    
+    ctx.textBaseline = 'bottom'
+    ctx.textAlign = 'center'
+    ctx.font = `${h * 0.75}px input_mono_medium`
     ctx.fillText(g, (x + 0.5) * w, (y + 1) * h)
   }
 }
