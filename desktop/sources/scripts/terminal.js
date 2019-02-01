@@ -18,6 +18,8 @@ function Terminal (tile = { w: 20, h: 30 }) {
   this.keyboard = new Keyboard(this)
   this.controller = new Controller()
 
+
+  this.animationFrameId = null
   // Themes
   this.theme = new Theme({ background: '#000000', f_high: '#ffffff', f_med: '#777777', f_low: '#444444', f_inv: '#000000', b_high: '#eeeeee', b_med: '#72dec2', b_low: '#444444', b_inv: '#ffb545' })
 
@@ -28,6 +30,8 @@ function Terminal (tile = { w: 20, h: 30 }) {
   this.showInterface = true
   this.timer = null
   this.bpm = 120
+  this.previousState = null
+  this.previousCursor = null
 
   this.install = function (host) {
     host.appendChild(this.el)
@@ -68,10 +72,15 @@ function Terminal (tile = { w: 20, h: 30 }) {
   }
 
   this.update = function () {
-    this.clear()
+    // this.clear()
     this.ports = this.findPorts()
-    this.drawProgram()
-    this.drawInterface()
+    if (this.animationFrameId) {
+      cancelAnimationFrame(this.animationFrameId)
+    }
+    this.animationFrameId = requestAnimationFrame(() => {
+      this.drawProgram()
+      this.drawInterface()
+    })
   }
 
   this.reset = function () {
@@ -186,6 +195,7 @@ function Terminal (tile = { w: 20, h: 30 }) {
   // Canvas
 
   this.clear = function () {
+    this.previousState = null;
     this.context.clearRect(0, 0, this.size.width, this.size.height)
   }
 
@@ -195,18 +205,27 @@ function Terminal (tile = { w: 20, h: 30 }) {
     if (x % this.size.grid.w === 0 && y % this.size.grid.h === 0) { return '+' }
     return g
   }
-
+  
   this.drawProgram = function () {
     for (let y = 0; y < this.orca.h; y++) {
       for (let x = 0; x < this.orca.w; x++) {
         const port = this.ports[`${x}:${y}`]
         const glyph = this.guide(x, y)
         const isCursor = this.isCursor(x, y)
+        if (this.previousState && !isCursor) {
+          const ispreviousCursor = this.previousCursor && x === this.previousCursor.x && y === this.previousCursor.y;
+          if (!ispreviousCursor) {
+            const previousGlyph = this.previousState[y * this.orca.w + x];
+            if (previousGlyph === this.orca.glyphAt(x, y)) continue
+          }
+        }
         if (this.showInterface === false && glyph === '.' && !isCursor) { continue }
         const styles = { isSelection: this.isSelection(x, y), isCursor: isCursor, isPort: port ? port.type : false, isLocked: this.orca.lockAt(x, y) }
         this.drawSprite(x, y, glyph, styles)
       }
     }
+    this.previousCursor = { x: this.cursor.x, y: this.cursor.y };
+    this.previousState = this.orca.s;
   }
 
   this.drawInterface = function () {
@@ -266,6 +285,7 @@ function Terminal (tile = { w: 20, h: 30 }) {
         win.setSize(width, height, true)
       }
     }
+    this.clear();
   }
 
   function clamp (v, min, max) { return v < min ? min : v > max ? max : v }
