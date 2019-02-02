@@ -244,11 +244,15 @@ function Terminal (tile = { w: 20, h: 30 }) {
         }
 
         if (!this.showInterface && resultGlyph === '.') {
-          if (!isCursor) {
-            if (isPreviousCursor) clear = true;
+          if (!!previousPort && !port) {
+            clear = true;
             draw = false;
           }
-          
+
+          if (!isCursor && !port) {
+            if (isPreviousCursor || previousGlyph !== '.') clear = true;
+            draw = false;
+          }
         }
 
         if (clear) {
