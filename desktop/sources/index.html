@@ -69,7 +69,11 @@
       terminal.controller.add("default","Theme","Download Themes..",() => { require('electron').shell.openExternal('https://github.com/hundredrabbits/Themes'); })
 
       terminal.controller.commit()
-      terminal.start()
+
+      const fontFace = new FontFace('input_mono_medium', 'url(\'media/fonts/input_mono_medium.ttf\') format(\'truetype\')');
+      fontFace.load().then(() => {
+        terminal.start();
+      });
 
       </script>
   </body>

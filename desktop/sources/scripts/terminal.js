@@ -8,6 +8,7 @@ function Terminal(tile = {w: 20, h: 30}) {
   const Keyboard = require('./keyboard')
   const IO = require('./io')
   const Clock = require('./clock')
+  const Renderer = require('./renderer')
 
   this.library = require('../../core/library')
 
@@ -20,14 +21,19 @@ function Terminal(tile = {w: 20, h: 30}) {
   this.clocks = [new Clock(120)]
   this.selectedClock = -1
 
+
+  this.animationFrameId = null
   // Themes
   this.theme = new Theme({ background: '#000000', f_high: '#ffffff', f_med: '#777777', f_low: '#444444', f_inv: '#000000', b_high: '#eeeeee', b_med: '#72dec2', b_low: '#444444', b_inv: '#ffb545' })
 
-  this.el = document.createElement('canvas')
+  this.el = document.createElement('canvas', {alpha: false})
   this.context = this.el.getContext('2d')
   this.size = { width: 0, height: 0, ratio: 0.5, grid: { w: 8, h: 8 } }
   this.isPaused = false
   this.showInterface = true
+  this.previousState = null
+  this.previousCursor = null
+  this.previousPorts = {}
 
   this.install = function (host) {
     host.appendChild(this.el)
@@ -35,6 +41,7 @@ function Terminal(tile = {w: 20, h: 30}) {
   }
 
   this.start = function () {
+    this.renderer = new Renderer(tile.w, tile.h, this.theme.active)
     this.theme.start()
     this.io.start()
     this.source.new()
@@ -72,10 +79,15 @@ function Terminal(tile = {w: 20, h: 30}) {
   }
 
   this.update = function () {
-    this.clear()
+    // this.clear()
     this.ports = this.findPorts()
-    this.drawProgram()
-    this.drawInterface()
+    if (this.animationFrameId) {
+      cancelAnimationFrame(this.animationFrameId)
+    }
+    this.animationFrameId = requestAnimationFrame(() => {
+      this.drawProgram()
+      this.drawInterface()
+    })
   }
 
   this.reset = function () {
@@ -160,6 +172,9 @@ function Terminal(tile = {w: 20, h: 30}) {
 
   this.toggleInterface = function () {
     this.showInterface = this.showInterface !== true
+    this.clear()
+    this.drawInterface()
+    this.drawProgram()
   }
 
   this.toggleBackground = function () {
@@ -174,6 +189,11 @@ function Terminal(tile = {w: 20, h: 30}) {
 
   this.isSelection = function (x, y) {
     return !!(x >= this.cursor.x && x < this.cursor.x + this.cursor.w && y >= this.cursor.y && y < this.cursor.y + this.cursor.h)
+  }
+
+  this.isInside = function(x, y, box) {
+    if (!box) return false;
+    return x >= box.x && x < box.x + box.w && y >= box.y && y < box.y + box.h;
   }
 
   this.portAt = function (x, y, req = null) {
@@ -208,6 +228,7 @@ function Terminal(tile = {w: 20, h: 30}) {
   // Canvas
 
   this.clear = function () {
+    this.previousState = null;
     this.context.clearRect(0, 0, this.size.width, this.size.height)
   }
 
@@ -222,13 +243,55 @@ function Terminal(tile = {w: 20, h: 30}) {
     for (let y = 0; y < this.orca.h; y++) {
       for (let x = 0; x < this.orca.w; x++) {
         const port = this.ports[`${x}:${y}`]
-        const glyph = this.guide(x, y)
+        const previousPort = this.previousPorts[`${x}:${y}`]
+        const glyph = this.orca.s[y * this.orca.w + x];
+        const previousGlyph = this.previousState ? this.previousState[y * this.orca.w + x] : null;
+        const resultGlyph = this.guide(x, y);
         const isCursor = this.isCursor(x, y)
-        if (this.showInterface === false && glyph === '.' && !isCursor) { continue }
-        const styles = { isSelection: this.isSelection(x, y), isCursor: isCursor, isPort: port ? port.type : false, isLocked: this.orca.lockAt(x, y) }
-        this.drawSprite(x, y, glyph, styles)
+        const isPreviousCursor = this.previousCursor && x === this.previousCursor.x && y === this.previousCursor.y;
+        const isSelection = this.isSelection(x, y);
+        const isPreviousSelection = this.isInside(x, y, this.previousCursor);
+
+        let clear = false;
+        let draw = false;
+
+        if (previousGlyph !== glyph) {
+          draw = true;
+        }
+
+        if (!!port !== !!previousPort || (port && port.type !== previousPort.type)) {
+          draw = true;
+        }
+
+        if (isPreviousSelection !== isSelection || isCursor !== isPreviousCursor) {
+          draw = true;
+        }
+
+        if (!this.showInterface && resultGlyph === '.') {
+          if (!!previousPort && !port) {
+            clear = true;
+            draw = false;
+          }
+
+          if (!isCursor && !port) {
+            if (isPreviousCursor || previousGlyph !== '.') clear = true;
+            draw = false;
+          }
+        }
+
+        if (clear) {
+          this.context.clearRect(x * tile.w, y * tile.h, tile.w, tile.h);
+        }
+
+        if (draw) {
+          const styles = { isSelection: isSelection, isCursor: isCursor, isPort: port ? port.type : false, isLocked: this.orca.lockAt(x, y) }
+          this.drawSprite(x, y, resultGlyph, styles)
+        }
       }
     }
+    this.previousCursor = { x: this.cursor.x, y: this.cursor.y, w: this.cursor.w, h: this.cursor.h };
+    this.previousState = this.orca.s;
+    this.previousPorts = this.ports;
   }
 
   this.drawInterface = function () {
@@ -252,50 +315,8 @@ function Terminal(tile = {w: 20, h: 30}) {
 
   this.drawSprite = function (x, y, g, styles = { isCursor: false, isSelection: false, isPort: false, f: null, b: null }) {
     const ctx = this.context
-
-    ctx.textBaseline = 'bottom'
-    ctx.textAlign = 'center'
-    ctx.font = `${tile.h * 0.75}px input_mono_medium`
-
-    // Highlight Variables
-    if (g === 'V' && this.cursor.read() === 'V') {
-      ctx.fillStyle = this.theme.active.b_inv
-      ctx.fillRect(x * tile.w, (y) * tile.h, tile.w, tile.h)
-      ctx.fillStyle = this.theme.active.background
-    } else if (styles.f && styles.b && this.theme.active[styles.f] && this.theme.active[styles.b]) {
-      ctx.fillStyle = this.theme.active[styles.b]
-      ctx.fillRect(x * tile.w, (y) * tile.h, tile.w, tile.h)
-      ctx.fillStyle = this.theme.active[styles.f]
-    } else if (styles.isSelection) {
-      ctx.fillStyle = this.theme.active.b_inv
-      ctx.fillRect(x * tile.w, (y) * tile.h, tile.w, tile.h)
-      ctx.fillStyle = this.theme.active.f_inv
-    } else if (styles.isPort) {
-      if (styles.isPort === 'output') { // Output
-        ctx.fillStyle = this.theme.active.b_high
-        ctx.fillRect(x * tile.w, (y) * tile.h, tile.w, tile.h)
-        ctx.fillStyle = this.theme.active.f_low
-      } else if (styles.isPort === 'input') { // Input
-        ctx.fillStyle = this.theme.active.b_high
-      } else if (styles.isPort === 'passive') { // Passive
-        ctx.fillStyle = this.theme.active.b_med
-        ctx.fillRect(x * tile.w, (y) * tile.h, tile.w, tile.h)
-        ctx.fillStyle = this.theme.active.f_low
-      } else if (styles.isPort === 'haste') { // Haste
-        ctx.fillStyle = this.theme.active.background
-        ctx.fillRect(x * tile.w, (y) * tile.h, tile.w, tile.h)
-        ctx.fillStyle = this.theme.active.b_med
-      } else {
-        ctx.fillStyle = this.theme.active.background
-        ctx.fillRect(x * tile.w, (y) * tile.h, tile.w, tile.h)
-        ctx.fillStyle = this.theme.active.f_high
-      }
-    } else if (styles.isLocked) {
-      ctx.fillStyle = this.theme.active.f_med
-    } else {
-      ctx.fillStyle = this.theme.active.f_low
-    }
-    ctx.fillText(styles.isCursor && (g === '.' || g === '+') ? (!this.isPaused ? '@' : '~') : g, (x + 0.5) * tile.w, (y + 1) * tile.h)
+    g = styles.isCursor && (g === '.' || g === '+') ? (!this.isPaused ? '@' : '~') : g
+    this.renderer.drawSprite(ctx, x, y, g, styles)
   }
 
   this.write = function (text, offsetX, offsetY, limit) {
@@ -318,7 +339,6 @@ function Terminal(tile = {w: 20, h: 30}) {
     this.el.height = this.size.height + tile.h
     this.el.style.width = (this.size.width * this.size.ratio) + 'px'
     this.el.style.height = (this.size.height * this.size.ratio) + 'px'
-
     this.align()
 
     if (resizeWindow === true) {
@@ -331,6 +351,7 @@ function Terminal(tile = {w: 20, h: 30}) {
         win.setSize(width, height, true)
       }
     }
+    this.clear();
   }
 
   function clamp (v, min, max) { return v < min ? min : v > max ? max : v }
