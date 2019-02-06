@@ -4,11 +4,22 @@ class Clock {
 
   constructor(bpm, callback) {
     this.bpm = 0
-    this.callback = callback
+    this.callback = () => {}
     this.timer = null
     this.running = false
-
     this.setBpm(bpm)
+  }
+
+  setCallback(callback){
+    this.callback = callback
+  }
+
+  canSetBpm() {
+    return true;
+  }
+
+  getBpm() {
+    return this.bpm
   }
 
   setBpm(bpm) {

@@ -1,6 +1,6 @@
-'use strict'
+'use strict';
 
-function Terminal (tile = { w: 20, h: 30 }) {
+function Terminal(tile = {w: 20, h: 30}) {
   const Orca = require('../../core/orca')
   const Cursor = require('./cursor')
   const Source = require('./source')
@@ -17,7 +17,8 @@ function Terminal (tile = { w: 20, h: 30 }) {
   this.history = new History(this)
   this.keyboard = new Keyboard(this)
   this.controller = new Controller()
-  this.clock = new Clock(120, () => {this.run()})
+  this.clocks = [new Clock(120)]
+  this.selectedClock = -1
 
   // Themes
   this.theme = new Theme({ background: '#000000', f_high: '#ffffff', f_med: '#777777', f_low: '#444444', f_inv: '#000000', b_high: '#eeeeee', b_med: '#72dec2', b_low: '#444444', b_inv: '#ffb545' })
@@ -38,10 +39,15 @@ function Terminal (tile = { w: 20, h: 30 }) {
     this.io.start()
     this.source.new()
     this.history.record()
-    this.clock.start()
+    this.nextClock()
+
     this.resize()
     this.update()
     this.el.className = 'ready'
+  }
+
+  this.clock = function() {
+    return this.clocks[this.selectedClock]
   }
 
   this.run = function () {
@@ -55,7 +61,7 @@ function Terminal (tile = { w: 20, h: 30 }) {
     this.isPaused = !this.isPaused
     console.log(this.isPaused ? 'Paused' : 'Unpaused')
     this.update()
-    this.clock.setRunning(!this.isPaused)
+    this.clock().setRunning(!this.isPaused)
   }
 
   this.load = function (orca, frame = 0) {
@@ -80,14 +86,26 @@ function Terminal (tile = { w: 20, h: 30 }) {
 
   this.nextClock = function() {
     console.log("Next clock")
-    this.io.midiClock.next()
+    const previousClock = this.clock()
+    if (previousClock) {
+      previousClock.setRunning(false)
+      previousClock.setCallback(() => {})
+    }
+    this.selectedClock = (this.selectedClock + 1) % this.clocks.length
+    this.clock().setRunning(!this.isPaused)
+    this.clock().setCallback(() => this.run())
+
+    console.log("Selected clock:", this.clock())
+    this.update()
   }
 
   this.setSpeed = function (bpm) {
-    bpm = clamp(bpm, 60, 300)
-    console.log(`Changed speed to ${bpm}.`)
-    this.clock.setBpm(bpm)
-    this.update()
+    if (this.clock().canSetBpm()) {
+      bpm = clamp(bpm, 60, 300)
+      console.log(`Changed speed to ${bpm}.`)
+      this.clock().setBpm(bpm)
+      this.update()
+    }
   }
 
   this.setGrid = function (w, h) {
@@ -117,7 +135,9 @@ function Terminal (tile = { w: 20, h: 30 }) {
   }
 
   this.modSpeed = function (mod = 0) {
-    this.setSpeed(this.clock.bpm + mod)
+    if (this.clock().canSetBpm()) {
+      this.setSpeed(this.clock().getBpm() + mod)
+    }
   }
 
   this.modGrid = function (x = 0, y = 0) {
@@ -226,7 +246,7 @@ function Terminal (tile = { w: 20, h: 30 }) {
     this.write(`${this.orca.w}x${this.orca.h}`, col * 0, 0, this.size.grid.w)
     this.write(`${this.size.grid.w}/${this.size.grid.h}`, col * 1, 0, this.size.grid.w)
     this.write(`${this.orca.f}f${this.isPaused ? '*' : ''}`, col * 2, 0, this.size.grid.w)
-    this.write(`${this.clock}${this.orca.f % 4 === 0 ? '*' : ''}`, col * 3, 0, this.size.grid.w)
+    this.write(`${this.clock()}${this.orca.f % 4 === 0 ? '*' : ''}`, col * 3, 0, this.size.grid.w)
     this.write(`${this.io}`, col * 4, 0, this.size.grid.w)
   }
 
