@@ -103,7 +103,11 @@ function Midi (terminal) {
   }
 
   function convertLength (val, bpm) {
-    return (60000 / bpm) * (val / 15)
+    // TODO get bpm from daw midi
+    if (! bpm) {
+      bpm = 120;
+    }
+    return (60000 / 120) * (val / 15)
   }
 
   function clamp (v, min, max) { return v < min ? min : v > max ? max : v }
