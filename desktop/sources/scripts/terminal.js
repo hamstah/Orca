@@ -84,8 +84,15 @@ function Terminal(tile = {w: 20, h: 30}) {
 
   //
 
+  this.triggerCursor = function() {
+    const port = this.portAt(this.cursor.x, this.cursor.y)
+    console.log(port)
+    if(port && port.operator) {
+      port.operator.trigger()
+    }
+  }
+
   this.nextClock = function() {
-    console.log("Next clock")
     const previousClock = this.clock()
     if (previousClock) {
       previousClock.setRunning(false)
@@ -186,21 +193,21 @@ function Terminal(tile = {w: 20, h: 30}) {
       const g = this.orca.runtime[id]
       if (this.orca.lockAt(g.x, g.y)) { continue }
       if (!h[`${g.x}:${g.y}`]) {
-        h[`${g.x}:${g.y}`] = { type: g.passive && g.draw ? 'passive' : 'none', name: `${g.name}` }
+        h[`${g.x}:${g.y}`] = { operator: g, type: g.passive && g.draw ? 'passive' : 'none', name: `${g.name}` }
       }
       for (const id in g.ports.haste) {
         const port = g.ports.haste[id]
-        h[`${g.x + port.x}:${g.y + port.y}`] = { type: 'haste', name: `${g.glyph}'${id}` }
+        h[`${g.x + port.x}:${g.y + port.y}`] = { operator: g, type: 'haste', name: `${g.glyph}'${id}` }
       }
       for (const id in g.ports.input) {
         const port = g.ports.input[id]
-        h[`${g.x + port.x}:${g.y + port.y}`] = { type: 'input', name: `${g.glyph}:${id}` }
+        h[`${g.x + port.x}:${g.y + port.y}`] = { operator: g, type: 'input', name: `${g.glyph}:${id}` }
       }
-      if (g.ports.output) { h[`${g.x + g.ports.output.x}:${g.y + g.ports.output.y}`] = { type: 'output', name: `${g.glyph}.out` } }
+      if (g.ports.output) { h[`${g.x + g.ports.output.x}:${g.y + g.ports.output.y}`] = { operator: g, type: 'output', name: `${g.glyph}.out` } }
     }
     if (this.orca.host) {
-      h[`0:0`] = { type: 'input', name: `${this.orca.id}:input` }
-      h[`${this.orca.w - 1}:${this.orca.h - 1}`] = { type: 'output', name: `${this.orca.id}.output` }
+      h[`0:0`] = { operator: g, type: 'input', name: `${this.orca.id}:input` }
+      h[`${this.orca.w - 1}:${this.orca.h - 1}`] = { operator: g, type: 'output', name: `${this.orca.id}.output` }
     }
     return h
   }

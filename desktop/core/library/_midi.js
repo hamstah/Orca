@@ -16,7 +16,14 @@ function OperatorMidi (orca, x, y, passive) {
 
   this.run = function () {
     if (!this.bang()) { return }
+    this.play(false)
+  }
 
+  this.trigger = function () {
+    this.play(true)
+  }
+
+  this.play = function (now) {
     let rawChannel = this.listen(this.ports.haste.channel)
     let rawOctave = this.listen(this.ports.haste.octave, true)
     let rawNote = this.listen(this.ports.haste.note)
@@ -40,7 +47,7 @@ function OperatorMidi (orca, x, y, passive) {
 
     this.draw = false
 
-    terminal.io.midi.send(channel, octave, note, velocity, length)
+    terminal.io.midi.sendNote(channel, octave, note, velocity, length, now)
   }
 
   function clamp (v, min, max) { return v < min ? min : v > max ? max : v }
