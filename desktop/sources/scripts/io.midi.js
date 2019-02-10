@@ -37,20 +37,49 @@ function Midi (terminal) {
 
   // Midi
 
-  this.send = function (channel, octave, note, velocity, length) {
-    this.stack.push([channel, octave, note, velocity, length])
+  this.sendNote = function (channel, octave, note, velocity, length, now) {
+    this.send(["note", channel, octave, note, velocity, length], now)
+  }
+
+  this.sendControlChange = function(channel, value, now) {
+    this.send(["control-change", channel, value], now)
+  }
+
+  this.send = function(data, now) {
+    if (now) {
+      this.play(data, this.device())
+    } else {
+      this.stack.push(data)
+    }
   }
 
   this.play = function (data = this.stack, device) {
-    const channel = convertChannel(data[0])
-    const note = convertNote(data[1], data[2])
-    const velocity = data[3]
-    const length = window.performance.now() + convertLength(data[4], terminal.bpm)
-
     if (!device) { console.warn('No midi device!'); return }
 
-    device.send([channel[0], note, velocity])
-    device.send([channel[1], note, velocity], length)
+    switch (data[0]) {
+      case "control-change": {
+          let channel = data[1]
+          let value = data[2]
+          console.log([0xb0, channel, value])
+          device.send([0xb0, channel, value])
+          break
+        }
+
+      case "note": {
+        let channel = convertChannel(data[1])
+        let note = convertNote(data[2], data[3])
+        let velocity = data[4]
+        let length = window.performance.now() + convertLength(data[5], terminal.bpm)
+
+        device.send([channel[0], note, velocity])
+        device.send([channel[1], note, velocity], length)
+        console.log("note", data)
+        break
+      }
+      default:
+        console.log("Unsupported", data[0])
+        break
+    }
   }
 
   this.select = function (id) {

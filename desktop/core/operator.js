@@ -49,6 +49,9 @@ function Operator (orca, x, y, glyph = '.', passive = false) {
   this.run = function () {
   }
 
+  this.trigger = function() {
+  }
+
   // Helpers
 
   this.lock = function () {
