@@ -42,5 +42,8 @@ module.exports = {
   ':': require('./library/_midi'),
   ';': require('./library/_udp'),
   '=': require('./library/_osc'),
-  '^': require('./library/_control')
+  '^': require('./library/_control'),
+  '!': require('./library/_not'),
+  '&': require('./library/_and'),
+  '|': require('./library/_or')
 }
