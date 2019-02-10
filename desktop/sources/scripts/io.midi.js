@@ -60,8 +60,9 @@ function Midi (terminal) {
       case "control-change": {
           let channel = data[1]
           let value = data[2]
-          console.log([0xb0, channel, value])
-          device.send([0xb0, channel, value])
+          // offset with 64 as we can't get the full 0-127 range and 64-100 is
+          // the most common range used by devices
+          device.send([0xb0, 64 + channel, value])
           break
         }
 
@@ -73,7 +74,6 @@ function Midi (terminal) {
 
         device.send([channel[0], note, velocity])
         device.send([channel[1], note, velocity], length)
-        console.log("note", data)
         break
       }
       default:
