@@ -50,8 +50,13 @@ npm start
 - `*` **bang**: Bangs neighboring operators.
 - `#` **comment**: Comments a line, or characters until the next hash.
 - `:` **midi**('channel, 'octave, 'note, velocity, length): Sends a MIDI note.
+- `^` **midi CC**('function, 'value): Sends the Midi Control Change message with the given function + 64 and value
 - `;` **udp**: Sends a UDP message.
 - `=` **osc**(path): Sends a OSC message.
+- `&` **and**('a, 'b): Bangs if both inputs are bangs
+- `|` **or**('a, 'b): Bangs if either inputs is bang
+- `!` **not**('a): Bangs if input is not a bang, nothing otherwise
+
 
 ## Controls
 
@@ -96,7 +101,7 @@ To open the console, press `ctrl+.`.
 
 ## MIDI
 
-The [MIDI](https://en.wikipedia.org/wiki/MIDI) operator `:` takes up to 5 inputs('channel, 'octave, 'note, velocity, length). 
+The [MIDI](https://en.wikipedia.org/wiki/MIDI) operator `:` takes up to 5 inputs('channel, 'octave, 'note, velocity, length).
 
 For example, `:25C`, is a **C note, on the 5th octave, through the 3rd MIDI channel**, `:04c`, is a **C# note, on the 4th octave, through the 1st MIDI channel**. Velocity is an optional value from `0`(0/127) to `f`(127/127). Note length is a value from `0`(1/16) to `f`(16/16), which is a ratio of a full bar, *f* being `16/16`(a full bar), *8* being `1/2`(half), *4* being `1/4`(quarter). See it in action with [midi.orca](https://github.com/hundredrabbits/Orca/blob/master/examples/_midi.orca).
 
@@ -120,7 +125,7 @@ In console, type `terminal.io.udp.select(49160)` to select the **49160** udp por
 
 ## OSC
 
-The [OSC](https://github.com/MylesBorins/node-osc) operator `=` locks each consecutive eastwardly ports. 
+The [OSC](https://github.com/MylesBorins/node-osc) operator `=` locks each consecutive eastwardly ports.
 
  First char is used for path, nexts are sent as integers using [base36 Table](https://github.com/hundredrabbits/Orca#base36-table). For example, `=1abc` will send `10`, `11` and `12` to `/1`, via the port `49162` on `localhost`; `=a123` will send `1`, `2` and `3`, to the path `/a`.  You can use the [listener.js](https://github.com/hundredrabbits/Orca/blob/master/examples/listener.js) to test OSC messages. See it in action with [osc.orca](https://github.com/hundredrabbits/Orca/blob/master/examples/_osc.orca) or try it with [SonicPi](https://github.com/hundredrabbits/Orca/blob/master/TUTORIAL.md#sonicpi).
 
@@ -134,12 +139,12 @@ In console, type `terminal.io.osc.select(49162)` to select the **49162** osc por
 
 Orca operates on a base of 36 increments. Operators using numeric values will typically also operate on letters and convert them into values as per the following table. For instance `Dp` will bang every *24th frame*.
 
-| 0     | 1     | 2     | 3     | 4     | 5     | 6     | 7     | 8     | 9     | A     | B      | 
-| :-:   | :-:   | :-:   | :-:   | :-:   | :-:   | :-:   | :-:   | :-:   | :-:   | :-:   | :-:    | 
+| 0     | 1     | 2     | 3     | 4     | 5     | 6     | 7     | 8     | 9     | A     | B      |
+| :-:   | :-:   | :-:   | :-:   | :-:   | :-:   | :-:   | :-:   | :-:   | :-:   | :-:   | :-:    |
 | 0     | 1     | 2     | 3     | 4     | 5     | 6     | 7     | 8     | 9     | 10    | 11     |
 | **C** | **D** | **E** | **F** | **G** | **H** | **I** | **J** | **K** | **L** | **M** | **N**  |
-| 12    | 13    | 14    | 15    | 16    | 17    | 18    | 19    | 20    | 21    | 22    | 23     | 
-| **O** | **P** | **Q** | **R** | **S** | **T** | **U** | **V** | **W** | **X** | **Y** | **Z**  | 
+| 12    | 13    | 14    | 15    | 16    | 17    | 18    | 19    | 20    | 21    | 22    | 23     |
+| **O** | **P** | **Q** | **R** | **S** | **T** | **U** | **V** | **W** | **X** | **Y** | **Z**  |
 | 24    | 25    | 26    | 27    | 28    | 29    | 30    | 31    | 32    | 33    | 34    | 35     |
 
 ## Extras
