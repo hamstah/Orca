@@ -13,6 +13,8 @@ function Keyboard (terminal) {
     }
 
     if (event.key === 'c' && (event.metaKey || event.ctrlKey)) { terminal.cursor.copy(); event.preventDefault(); return }
+    if (event.key === 'y' && (event.metaKey || event.ctrlKey)) { terminal.cursor.pasteClipboard(); event.preventDefault(); return }
+
     if (event.key === 'x' && (event.metaKey || event.ctrlKey)) { terminal.cursor.cut(); event.preventDefault(); return }
     if (event.key === 'v' && (event.metaKey || event.ctrlKey)) { terminal.cursor.paste(); event.preventDefault(); return }
     if (event.key === 'a' && (event.metaKey || event.ctrlKey)) { terminal.cursor.selectAll(); event.preventDefault(); return }

@@ -1,5 +1,7 @@
 'use strict'
 
+const { clipboard } = require('electron')
+
 function Cursor (terminal) {
   this.x = 0
   this.y = 0
@@ -57,6 +59,10 @@ function Cursor (terminal) {
 
   this.paste = function () {
     this.writeBlock(this.toRect(), this.block)
+  }
+
+  this.pasteClipboard = function() {
+    this.writeBlock(this.toRect(), clipboard.readText().split(/\r?\n/))
   }
 
   this.read = function () {
