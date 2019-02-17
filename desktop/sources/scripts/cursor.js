@@ -52,6 +52,16 @@ function Cursor (terminal) {
     this.block = this.getBlock()
   }
 
+  this.copyClipboard =  function(){
+    const block = this.getBlock()
+    var rows = []
+    for (var i = 0; i < block.length; i++) {
+      rows.push(block[i].join(''))
+    }
+    const result = rows.join('\n')
+    clipboard.writeText(result)
+  }
+
   this.cut = function () {
     this.copy()
     this.erase()
