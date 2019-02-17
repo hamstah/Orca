@@ -136,7 +136,7 @@ function Midi (terminal) {
     if (! bpm) {
       bpm = 120;
     }
-    return (60000 / 120) * (val / 15)
+    return (60000 / bpm) * (val / 15)
   }
 
   function clamp (v, min, max) { return v < min ? min : v > max ? max : v }
