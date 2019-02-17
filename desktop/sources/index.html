@@ -52,7 +52,7 @@
       terminal.controller.add("default","Program","Decr. Col",() => { terminal.modGrid(-1,0); },"[")
       terminal.controller.add("default","Program","Incr. Row",() => { terminal.modGrid(0,1); },"}")
       terminal.controller.add("default","Program","Decr. Row",() => { terminal.modGrid(0,-1); },"{")
-      terminal.controller.add("default", "Program", "Next clock", () => {terminal.nextClock()}, "CmdOrCtrl+Space")
+      terminal.controller.add("default", "Program", "Next clock", () => {terminal.nextClock()}, "Ctrl+Space")
 
 
       terminal.controller.add("default","View","Zoom In",() => { terminal.modZoom(0.25); },"CmdOrCtrl+=")
